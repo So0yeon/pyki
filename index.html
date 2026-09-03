@@ -134,6 +134,7 @@ pre.code .cm{color:#7C9188}
 pre.code .st{color:#B7D8A8}
 pre.code .kw{color:#8FC9E8}
 pre.code .nb{color:#E8CB8F}
+pre.code.outp{white-space:pre-wrap;word-break:break-word}
 .blank-in{
   font-family:var(--mono);font-size:13.5px;background:#2C3B35;color:#FFF;
   border:1px solid #4A5F57;border-radius:5px;padding:2px 7px;min-width:88px;
@@ -211,6 +212,8 @@ input.oneline:focus{border-color:var(--jade)}
   background:transparent;color:var(--dim);font-size:14px;transition:.13s
 }
 .acts button:hover{color:var(--ink);border-color:var(--ink)}
+.acts button:disabled{opacity:.55;cursor:default}
+.acts button:disabled:hover{color:var(--dim);border-color:var(--line-2)}
 .acts .go{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:500;flex:1}
 .acts .go:hover{background:#000;color:#fff}
 .err{color:var(--wrong);font-size:13.5px;margin:0 0 10px}
@@ -424,6 +427,7 @@ const BANK = [
   type:"bug",
   prompt:"이 코드, 에러가 나. 틀린 줄을 고쳐볼까?",
   code:'print(Hello)',
+  buggyLine:0,
   answers:[['print("Hello")',"print('Hello')"]],
   hint1:"파이썬은 Hello를 변수 이름으로 읽고 있어. 근데 그런 변수는 만든 적이 없잖아.",
   hint2:"글자 그대로 보여주려면 감싸야 하는 게 있어.",
@@ -503,6 +507,7 @@ const BANK = [
   type:"bug",
   prompt:"이 조건문, 에러가 나. if 줄을 고쳐볼까?",
   code:'x = 10\nif x = 10:\n    print("십")',
+  buggyLine:1,
   answers:[["if x == 10:"]],
   hint1:"= 는 값을 넣는 기호였지. 지금 필요한 건 '같은지 물어보는' 기호야.",
   hint2:"물어볼 때는 기호를 두 개 겹쳐 써.",
@@ -597,6 +602,7 @@ const BANK = [
   type:"bug",
   prompt:"1부터 5까지 출력하려 했는데 4까지만 나오네. for 줄을 고쳐볼까?",
   code:'for i in range(1, 5):\n    print(i)',
+  buggyLine:0,
   answers:[["for i in range(1, 6):","for i in range(1,6):"]],
   hint1:"끝값은 포함 안 된다는 거, 떠올려봐.",
   hint2:"5를 포함시키려면 끝을 6으로 적어야 해.",
@@ -739,6 +745,7 @@ BANK.push(
   type:"bug",
   prompt:"이 코드, KeyError가 나. 마지막 줄을 고쳐볼까?",
   code:'scores = {"국어": 90, "수학": 85}\nprint(scores["영어"])',
+  buggyLine:1,
   answers:[['print(scores.get("영어"))','print(scores.get("영어", 0))',"print(scores.get('영어'))"]],
   hint1:"없는 키를 대괄호로 부르면 에러가 나. 근데 에러 대신 조용히 넘어가는 방법이 있어.",
   hint2:"딕셔너리가 가진 기능 중 '가져오다'라는 이름의 걸 써봐.",
@@ -1411,6 +1418,130 @@ function match(user,list){
   return list.some(a=>norm(a)===u || tight(a)===ut);
 }
 
+/* ─────────── 파이썬 실행기 (Pyodide, 워커) ─────────── */
+const PY_WORKER_SRC = `
+let _queue = Promise.resolve();
+async function ensurePyodideLoaded(){
+  if (!self.pyodide) {
+    importScripts('https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js');
+    self.pyodide = await loadPyodide();
+  }
+  return self.pyodide;
+}
+self.onmessage = (e) => {
+  const { type, id, code } = e.data;
+  _queue = _queue.then(async () => {
+    if (type === 'init') {
+      try { await ensurePyodideLoaded(); postMessage({ type: 'ready' }); }
+      catch (err) { postMessage({ type: 'ready', error: String((err && err.message) || err) }); }
+      return;
+    }
+    if (type === 'run') {
+      try {
+        const pyodide = await ensurePyodideLoaded();
+        pyodide.globals.set('_user_code', code);
+        const result = await pyodide.runPythonAsync(\`
+import sys, io
+_out, _err = io.StringIO(), io.StringIO()
+_old_out, _old_err = sys.stdout, sys.stderr
+sys.stdout, sys.stderr = _out, _err
+_ns = {}
+_error = None
+try:
+    exec(_user_code, _ns)
+except Exception as _e:
+    _error = type(_e).__name__ + ": " + str(_e)
+finally:
+    sys.stdout, sys.stderr = _old_out, _old_err
+(_out.getvalue(), _err.getvalue(), _error)
+\`);
+        const [stdout, stderr, error] = result.toJs();
+        result.destroy && result.destroy();
+        postMessage({ type: 'result', id, stdout, stderr, error });
+      } catch (err) {
+        postMessage({ type: 'result', id, stdout: '', stderr: '', error: String((err && err.message) || err) });
+      }
+    }
+  });
+};
+`;
+let PYW=null, pyReadyPromise=null, pyReqId=0;
+const pyPending={};
+function spawnPyWorker(){
+  const url=URL.createObjectURL(new Blob([PY_WORKER_SRC],{type:"text/javascript"}));
+  const w=new Worker(url);
+  w.onmessage=(e)=>{
+    const d=e.data;
+    if(d.type==="result" && pyPending[d.id]){ pyPending[d.id](d); delete pyPending[d.id]; }
+  };
+  return w;
+}
+function ensurePy(){
+  if(!pyReadyPromise){
+    PYW=spawnPyWorker();
+    pyReadyPromise=new Promise((resolve)=>{
+      const to=setTimeout(()=>resolve(false),20000);
+      const onmsg=(e)=>{
+        if(e.data.type==="ready"){ clearTimeout(to); PYW.removeEventListener("message",onmsg); resolve(!e.data.error); }
+      };
+      PYW.addEventListener("message",onmsg);
+      PYW.postMessage({type:"init"});
+    });
+  }
+  return pyReadyPromise;
+}
+function runPy(code,timeoutMs){
+  timeoutMs=timeoutMs||6000;
+  return ensurePy().then((ok)=>{
+    if(!ok) return {stdout:"",stderr:"",error:"UNAVAILABLE"};
+    return new Promise((resolve)=>{
+      const id=++pyReqId;
+      let settled=false;
+      const timer=setTimeout(()=>{
+        if(settled)return; settled=true;
+        delete pyPending[id];
+        try{ PYW.terminate(); }catch(e){}
+        PYW=null; pyReadyPromise=null;
+        resolve({stdout:"",stderr:"",error:"TIMEOUT"});
+      },timeoutMs);
+      pyPending[id]=(d)=>{ if(settled)return; settled=true; clearTimeout(timer); resolve(d); };
+      PYW.postMessage({type:"run",id,code});
+    });
+  });
+}
+const CANON_CACHE={}, MODEL_CACHE={};
+function bugLines(q,replacement){
+  const lines=q.code.split("\n"); lines[q.buggyLine]=replacement; return lines.join("\n");
+}
+function cachedRun(cache,key,code){
+  if(cache[key]) return cache[key];
+  const p=runPy(code);
+  cache[key]=p;
+  p.then(r=>{ if(r.error) delete cache[key]; });
+  return p;
+}
+function getCanonicalOutput(q){ return cachedRun(CANON_CACHE,q.id,bugLines(q,q.answers[0][0])); }
+function getModelOutput(q){ return cachedRun(MODEL_CACHE,q.id,q.model); }
+function runsExecutable(q){
+  return q.track==="body" && ((q.type==="bug"&&typeof q.buggyLine==="number") || q.type==="write");
+}
+function setRunning(active,msg){
+  ["chk","hint","rev"].forEach(id=>{
+    const b=document.getElementById(id); if(!b) return;
+    b.disabled=active;
+    if(id==="chk") b.textContent = active? (msg||"실행하는 중..."):"확인";
+  });
+}
+function outBlock(label,res){
+  if(!res) return "";
+  let body;
+  if(res.error==="TIMEOUT") body='<span style="color:var(--wrong)">코드 실행이 너무 오래 걸렸어. 무한 반복문이 있는지 확인해봐!</span>';
+  else if(res.error==="UNAVAILABLE") return "";
+  else if(res.error) body='<span style="color:var(--wrong)">'+esc(res.error)+'</span>';
+  else body=esc(res.stdout)||"(출력 없음)";
+  return '<div class="model"><div class="lbl">'+label+'</div><pre class="code outp">'+body+'</pre></div>';
+}
+
 /* ─────────── 세션 ─────────── */
 let SES=null, VIEW="home";
 const SES_KEY="pyki_session_v1";
@@ -1469,7 +1600,7 @@ function startSession(list,label){
     S.lastDay=today;
   }
   const before={body:curLv("body"),orb:curLv("orb")};
-  SES={qs:list, i:0, res:[], label:label||"오늘의 다섯 문제", before:before, hint:0, done:false, picked:null, order:[], revealed:false};
+  SES={qs:list, i:0, res:[], label:label||"오늘의 다섯 문제", before:before, hint:0, done:false, picked:null, order:[], revealed:false, runResult:null};
   VIEW="q"; render();
 }
 
@@ -1592,6 +1723,7 @@ function qView(){
     VIEW="home";SES=null;render();
   };
   paintOpts(); paintOrder(); paintHints(); paintActs();
+  if(runsExecutable(q)) ensurePy();
   const first=app.querySelector(".blank-in, #bugIn, #wIn");
   if(first) first.focus({preventScroll:true});
 }
@@ -1693,7 +1825,8 @@ function check(){
   else if(q.type==="bug"){
     const v=document.getElementById("bugIn").value;
     if(!v.trim()) return showErr("고친 줄을 쓰고 확인하자!");
-    finish(match(v,q.answers[0]));
+    if(typeof q.buggyLine==="number") checkBugByRun(q,v);
+    else finish(match(v,q.answers[0]));
   }
   else if(q.type==="order"){
     if(SES.order.length!==q.lines.length) return showErr("모든 줄을 순서대로 다 쌓고 확인하자!");
@@ -1702,8 +1835,29 @@ function check(){
   else if(q.type==="write"){
     const v=document.getElementById("wIn").value;
     if(!v.trim()) return showErr("코드를 작성하고 확인하자!");
-    SES.selfPending=true; finish(null);
+    SES.selfPending=true;
+    if(q.track==="body") runWriteAndShow(q,v);
+    else finish(null);
   }
+}
+
+async function checkBugByRun(q,v){
+  hideErr(); setRunning(true,"코드를 실행해서 확인하는 중...");
+  const [stu,can]=await Promise.all([runPy(bugLines(q,v)), getCanonicalOutput(q)]);
+  setRunning(false);
+  if(!SES || SES.qs[SES.i]!==q) return;
+  SES.runResult={student:stu, canonical:can};
+  if(stu.error==="UNAVAILABLE"){ finish(match(v,q.answers[0])); return; }
+  finish(!stu.error && stu.stdout===can.stdout);
+}
+
+async function runWriteAndShow(q,v){
+  setRunning(true,"코드를 실행하는 중...");
+  const [stu,mod]=await Promise.all([runPy(v), getModelOutput(q)]);
+  setRunning(false);
+  if(!SES || SES.qs[SES.i]!==q) return;
+  SES.runResult = (stu.error==="UNAVAILABLE")? null : {student:stu, model:mod};
+  finish(null);
 }
 
 function finish(ok){
@@ -1732,7 +1886,12 @@ function afterView(ok){
   const q=SES.qs[SES.i], box=document.getElementById("after");
   let h="";
   if(ok===null){
-    h+='<div class="explain"><div class="model"><div class="lbl">이렇게 써볼 수 있어</div>'+codeBlock(q.model)+'</div>';
+    h+='<div class="explain">';
+    if(SES.runResult){
+      h+=outBlock("네 코드를 실행한 결과",SES.runResult.student);
+      h+=outBlock("모델 코드를 실행한 결과",SES.runResult.model);
+    }
+    h+='<div class="model"><div class="lbl">이렇게 써볼 수 있어</div>'+codeBlock(q.model)+'</div>';
     h+='<div class="lbl" style="font-size:12.5px;color:var(--faint);margin-bottom:6px">스스로 확인해보자</div><ul class="checks">';
     q.checks.forEach(c=>h+='<li>'+c+'</li>');
     h+='</ul><div class="acts"><button class="go" id="selfY">다 맞았어</button><button id="selfN">아직이야</button></div></div>';
@@ -1753,6 +1912,10 @@ function explainHTML(q,ok){
     h+='<div class="model"><div class="lbl">정답</div>'+codeBlock(q.code.split("____").map((p,i)=>p+(i<q.answers.length?q.answers[i][0]:"")).join(""))+'</div>';
   if(!ok && q.type==="bug")
     h+='<div class="model"><div class="lbl">정답</div>'+codeBlock(q.answers[0][0])+'</div>';
+  if(q.type==="bug" && SES.runResult){
+    h+=outBlock("네 코드를 실행한 결과",SES.runResult.student);
+    if(!ok) h+=outBlock("정답 코드를 실행한 결과",SES.runResult.canonical);
+  }
   if(!ok && q.type==="order"){
     const a=accepted(q)[0];
     h+='<div class="model"><div class="lbl">정답'+(accepted(q).length>1?' (다른 순서도 될 수 있어)':'')+'</div>'+
@@ -1772,7 +1935,7 @@ function explainHTML(q,ok){
 
 function nextQ(){
   if(SES.i<SES.qs.length-1){
-    SES.i++; SES.hint=0; SES.done=false; SES.picked=null; SES.order=[]; SES.shuffled=null; SES.revealed=false;
+    SES.i++; SES.hint=0; SES.done=false; SES.picked=null; SES.order=[]; SES.shuffled=null; SES.revealed=false; SES.runResult=null;
     render();
   } else {
     S.sessions++; save();
