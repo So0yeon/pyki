@@ -56,7 +56,11 @@ code{font-family:var(--mono);font-size:.88em;background:var(--jade-soft);padding
 
 /* ── 상단 ── */
 .top{display:flex;align-items:center;justify-content:space-between;padding:22px 0 8px}
-.brand{font-family:var(--serif);font-size:27px;font-weight:700;letter-spacing:.06em;line-height:1}
+.brand{
+  font-family:var(--serif);font-size:27px;font-weight:700;letter-spacing:.06em;line-height:1;
+  background:none;border:none;padding:0;color:var(--ink);transition:opacity .15s
+}
+.brand:hover{opacity:.75}
 .brand span{color:var(--jade)}
 .top-r{display:flex;align-items:center;gap:10px}
 .top-meta{font-size:12.5px;color:var(--faint);letter-spacing:.02em}
@@ -75,10 +79,51 @@ code{font-family:var(--mono);font-size:.88em;background:var(--jade-soft);padding
 .cr-orb{fill:var(--orb)}
 .cr-eye{fill:var(--paper)}
 
+/* ── 서식지 ── */
+.habitat{
+  position:relative; overflow:hidden; border-radius:28px;
+  padding:26px 20px 18px; margin-bottom:4px;
+  background:radial-gradient(120% 85% at 50% -8%, var(--jade-soft) 0%, var(--card) 72%);
+  border:1px solid var(--line);
+}
+.habitat.lv6{background:radial-gradient(60% 60% at 76% 18%, var(--orb-soft) 0%, transparent 55%), radial-gradient(120% 85% at 50% -8%, var(--jade-soft) 0%, var(--card) 72%)}
+.spark-dot{position:absolute;border-radius:99px;background:var(--jade);opacity:.4;animation:sp-float 5.5s ease-in-out infinite}
+.spark-dot.o{background:var(--orb)}
+@keyframes sp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.name-wrap{text-align:center;margin-top:6px}
+.name-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--card);border:1px solid var(--line-2);border-radius:99px;
+  padding:7px 8px 7px 16px;font-family:var(--serif);font-weight:700;font-size:17px;color:var(--ink);
+  box-shadow:0 3px 8px rgba(0,0,0,.07);
+}
+.name-tag button{
+  background:none;border:none;padding:5px;color:var(--faint);font-size:13px;line-height:1;
+  cursor:pointer;border-radius:99px;transition:.15s
+}
+.name-tag button:hover{color:var(--ink);background:var(--well)}
+.name-form{display:flex;gap:7px;margin-top:4px;max-width:280px;margin-left:auto;margin-right:auto}
+.name-form input{
+  flex:1;min-width:0;padding:10px 14px;border-radius:11px;border:1px solid var(--line-2);
+  background:var(--card);color:var(--ink);font-family:var(--sans);font-size:14px;outline:none
+}
+.name-form input:focus{border-color:var(--jade)}
+.name-form button{
+  padding:10px 16px;border-radius:11px;border:none;background:var(--jade);color:#fff;
+  font-weight:600;font-size:13.5px;white-space:nowrap
+}
+.name-form button:hover{background:var(--jade-deep)}
+.name-hint{font-size:12px;color:var(--faint);margin-top:8px}
+
 /* ── 신분 ── */
-.ident{text-align:center;margin:2px 0 26px}
-.ident .rank{font-family:var(--serif);font-size:31px;font-weight:700;letter-spacing:.04em;line-height:1.25}
+.ident{text-align:center;margin:14px 0 26px}
+.ident .rank{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:.04em;line-height:1.25;color:var(--dim)}
 .ident .molt{font-size:13px;color:var(--dim);margin-top:2px;letter-spacing:.02em}
+.stat-chips{display:flex;gap:8px;margin:0 0 20px}
+.chip{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 6px;text-align:center}
+.chip .ic{font-size:17px;line-height:1}
+.chip .v{font-family:var(--serif);font-weight:700;font-size:16px;margin-top:3px}
+.chip .l{font-size:10px;color:var(--faint);margin-top:1px;letter-spacing:.02em}
 
 /* ── 진행 레일 ── */
 .rails{display:flex;flex-direction:column;gap:11px;margin-bottom:26px}
@@ -314,7 +359,7 @@ input.oneline:focus{border-color:var(--jade)}
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="brand">Py<span>ki</span></div>
+    <button class="brand" id="brandBtn" type="button" aria-label="홈으로">Py<span>ki</span></button>
     <div class="top-r">
       <button class="theme-btn" id="themeBtn" type="button" aria-label="화면 밝기 전환">🌙</button>
       <div class="top-meta" id="topMeta"></div>
@@ -343,6 +388,11 @@ document.getElementById("themeBtn").addEventListener("click",()=>{
   applyTheme(next); paintThemeBtn();
 });
 paintThemeBtn();
+function goHome(){
+  if(VIEW==="q" && SES && SES.i>0 && !confirm("여기서 그만두면 이번 세션은 끝나버려. 그만둘까?")) return;
+  VIEW="home"; SES=null; render();
+}
+document.getElementById("brandBtn").addEventListener("click",goHome);
 
 const BANK = [
 /* ===== Lv.1 알 : print, 변수, 자료형 ===== */
@@ -1627,7 +1677,7 @@ const BUNDLES = [
 
 /* ─────────── 상태 ─────────── */
 const KEY="pyki_v1";
-let S = {solved:{}, review:{}, sessions:0, noHint:0, hintUse:0, reveal:0, tried:0, streak:0, lastDay:null};
+let S = {solved:{}, review:{}, sessions:0, noHint:0, hintUse:0, reveal:0, tried:0, streak:0, lastDay:null, petName:null};
 try{ const r=localStorage.getItem(KEY); if(r) S=Object.assign(S,JSON.parse(r)); }catch(e){}
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 
@@ -1883,7 +1933,7 @@ function outBlock(label,res){
 }
 
 /* ─────────── 세션 ─────────── */
-let SES=null, VIEW="home";
+let SES=null, VIEW="home", EDITING_NAME=false;
 const SES_KEY="pyki_session_v1";
 function persistSession(){
   try{
@@ -1974,9 +2024,28 @@ function homeView(){
   const topics=[...new Set(list.map(q=>q.topic))].slice(0,2).join(" · ");
   const sub=[topics, dueN?("복습 "+dueN+"문제 포함"):null].filter(Boolean).join(" · ");
 
-  let h=creature();
+  let h='<div class="habitat'+(bl===6?" lv6":"")+'">';
+  h+='<div class="spark-dot" style="width:6px;height:6px;top:16%;left:11%;animation-delay:0s"></div>';
+  h+='<div class="spark-dot o" style="width:8px;height:8px;top:22%;right:14%;animation-delay:1.3s"></div>';
+  h+='<div class="spark-dot" style="width:5px;height:5px;bottom:20%;left:19%;animation-delay:2.6s"></div>';
+  h+=creature();
+  h+='<div class="name-wrap">';
+  if(S.petName && !EDITING_NAME){
+    h+='<span class="name-tag">'+esc(S.petName)+'<button id="renameBtn" type="button" aria-label="이름 바꾸기">✎</button></span>';
+  } else {
+    h+='<div class="name-form"><input id="nameIn" maxlength="12" placeholder="이름을 지어줄래?" value="'+(S.petName?esc(S.petName):"")+'">'+
+       '<button id="nameOk" type="button">'+(S.petName?"저장":"정하기")+'</button></div>';
+    if(!S.petName) h+='<p class="name-hint">같이 자랄 파이썬한테 이름을 붙여주자.</p>';
+  }
+  h+='</div></div>';
+
   h+='<div class="ident"><div class="rank">'+LV.body[bl].n+'</div><div class="molt">'+
      (bl===1? (molt?molt+"번째 금이 갔어":"아직 조용해") : molt+"번째 탈피")+'</div></div>';
+
+  h+='<div class="stat-chips">'+
+     '<div class="chip"><div class="ic">🔥</div><div class="v">'+S.streak+'</div><div class="l">연속 학습일</div></div>'+
+     '<div class="chip"><div class="ic">🌱</div><div class="v">'+totalSolved()+'</div><div class="l">해결한 문제</div></div>'+
+     '</div>';
 
   h+='<div class="rails">';
   h+='<div class="rail"><div class="rail-k">몸</div><div class="bar"><i style="width:'+(trackPct("body")*100).toFixed(0)+'%"></i></div><div class="rail-v">'+(trackPct("body")*100).toFixed(0)+'%</div></div>';
@@ -1999,6 +2068,20 @@ function homeView(){
   document.getElementById("go").onclick=()=>startSession(list, allDone?"복습 세션":"오늘의 다섯 문제");
   document.getElementById("tBun").onclick=()=>{VIEW="bundles";render();};
   document.getElementById("tRec").onclick=()=>{VIEW="records";render();};
+  const rb=document.getElementById("renameBtn");
+  if(rb) rb.onclick=()=>{ EDITING_NAME=true; render(); };
+  const nameIn=document.getElementById("nameIn");
+  const saveName=()=>{
+    const v=(nameIn.value||"").trim();
+    if(!v) return;
+    S.petName=v.slice(0,12); EDITING_NAME=false; save(); render();
+  };
+  const nameOk=document.getElementById("nameOk");
+  if(nameOk){
+    nameOk.onclick=saveName;
+    nameIn.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); saveName(); } });
+    if(!S.petName) nameIn.focus({preventScroll:true});
+  }
 }
 
 /* ═══════════ 문제 ═══════════ */
@@ -2058,10 +2141,7 @@ function qView(){
   h+='</div>';
   app.innerHTML=h; meta();
 
-  document.getElementById("exit").onclick=()=>{
-    if(SES.i>0 && !confirm("여기서 그만두면 이번 세션은 끝나버려. 그만둘까?")) return;
-    VIEW="home";SES=null;render();
-  };
+  document.getElementById("exit").onclick=goHome;
   paintOpts(); paintOrder(); paintHints(); paintActs();
   if(runsExecutable(q)) ensurePy();
   const first=app.querySelector(".blank-in, #bugIn, #wIn");
@@ -2402,7 +2482,7 @@ function recordsView(){
   if(rn) rn.onclick=()=>startSession(due.slice(0,5).map(id=>byId[id]),"복습 세션");
   document.getElementById("reset").onclick=()=>{
     if(confirm("정말 모든 기록을 지울까? 되돌릴 수 없어!")){
-      S={solved:{},review:{},sessions:0,noHint:0,hintUse:0,reveal:0,tried:0,streak:0,lastDay:null};
+      S={solved:{},review:{},sessions:0,noHint:0,hintUse:0,reveal:0,tried:0,streak:0,lastDay:null,petName:S.petName};
       save(); VIEW="home"; render();
     }
   };
