@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
+@import url('https://cdn.jsdelivr.net/gh/MonadABXY/mona-font/web/mona.css');
 :root{
   --paper:#F2F3EF; --card:#FBFBF9; --ink:#16211D; --dim:#6B7872; --faint:#9AA6A0;
   --line:#DDE2DB; --line-2:#C7CFC7;
@@ -20,7 +21,7 @@
   --pick-soft:#EDEFEA; --well:#EFF1EC; --well-item:#FFFFFF;
   --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   --serif:"Gowun Batang",serif;
-  --sans:Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --sans:"Mona12 Text KR",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
 }
 @media(prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -367,6 +368,18 @@ const BANK = [
   code:'print("3 + 4")',
   choices:['7','3 + 4','"3 + 4"','에러가 난다'],
   correct:1,
+  vary(){
+    const a=randInt(2,8), b=randInt(2,8);
+    return {
+      code:'print("'+a+' + '+b+'")',
+      choices:[String(a+b), a+' + '+b, '"'+a+' + '+b+'"', '에러가 난다'],
+      correct:1,
+      explain:Object.assign({},this.explain,{
+        picture:'따옴표는 봉투 같은 거야. 봉투에 넣어 건네면 파이썬은 내용물을 열어보지 않고 그대로 전달해. 봉투 없이 '+a+' + '+b+'를 건네면 그제서야 계산기를 꺼내지.',
+        trap:'print('+a+' + '+b+')는 '+(a+b)+'이 나오고 print("'+a+' + '+b+'")는 '+a+' + '+b+'가 그대로 나와. 따옴표 하나 차이로 계산이 되고 안 되고가 갈리는 거지.'
+      })
+    };
+  },
   hint1:"따옴표 안에 들어간 건 계산할 대상이 아니라 그냥 글자야.",
   hint2:"파이썬은 따옴표 안을 들여다보지 않아. 있는 그대로 옮길 뿐이야.",
   explain:{
@@ -382,6 +395,10 @@ const BANK = [
   prompt:"이름을 담은 변수를 만들고 출력해볼 거야. 빈칸을 채워볼까?",
   code:'name ____ "파이키"\nprint(name)',
   answers:[["="]],
+  vary(){
+    const nm=pickOne(["코딩","파이썬","공부","도전","친구","여름"]);
+    return { code:'name ____ "'+nm+'"\nprint(name)' };
+  },
   hint1:"오른쪽에 있는 값을 왼쪽 이름표에 붙이는 기호야.",
   hint2:"기호 하나! 수학에서 '같다'로 쓰는 그거야.",
   explain:{
@@ -398,6 +415,17 @@ const BANK = [
   code:'a = "3"\nb = "4"\nprint(a + b)',
   choices:['7','34','3 + 4','에러가 난다'],
   correct:1,
+  vary(){
+    const a=randInt(2,9), b=randInt(2,9);
+    return {
+      code:'a = "'+a+'"\nb = "'+b+'"\nprint(a + b)',
+      choices:[String(a+b), ''+a+b, a+' + '+b, '에러가 난다'],
+      correct:1,
+      explain:Object.assign({},this.explain,{
+        picture:'숫자 '+a+'과 문자 "'+a+'"은 생김새만 같지 종류가 달라. 사과 '+a+'개랑 종이에 적힌 글자 '+a+'가 다른 거랑 똑같아. 글자 '+a+'에 글자 '+b+'를 붙이면 '+a+''+b+'이라는 글자가 될 뿐, '+(a+b)+'이 되진 않아.'
+      })
+    };
+  },
   hint1:"a랑 b는 숫자가 아니라 따옴표에 싸인 글자야.",
   hint2:"글자끼리 더하면 파이썬은 그냥 이어 붙여.",
   explain:{
@@ -459,6 +487,10 @@ const BANK = [
   prompt:"가격에 개수를 곱해서 총액을 출력해볼 거야. 순서를 맞춰볼까?",
   lines:['price = 1500','count = 3','total = price * count','print(total)'],
   accept:[[0,1,2,3],[1,0,2,3]],
+  vary(){
+    const price=pickOne([800,1200,1500,2000,2500,3000,3500]), count=randInt(2,6);
+    return { lines:['price = '+price,'count = '+count,'total = price * count','print(total)'] };
+  },
   hint1:"재료가 있어야 요리를 하지. 곱하기 전에 두 값이 먼저 있어야 해.",
   hint2:"total을 계산한 다음에야 출력할 수 있어.",
   explain:{
@@ -492,6 +524,13 @@ const BANK = [
   prompt:"점수가 60점 이상이면 합격을 출력해볼 거야. 빈칸을 채워볼까?",
   code:'score = 75\n____ score >= 60:\n    print("합격")',
   answers:[["if"]],
+  vary(){
+    const th=pickOne([50,60,70]), score=th+randInt(1,25);
+    return {
+      prompt:'점수가 '+th+'점 이상이면 합격을 출력해볼 거야. 빈칸을 채워볼까?',
+      code:'score = '+score+'\n____ score >= '+th+':\n    print("합격")'
+    };
+  },
   hint1:"'만약'에 해당하는 영어 단어야. 두 글자!",
   hint2:"i로 시작해서 f로 끝나.",
   explain:{
@@ -508,6 +547,13 @@ const BANK = [
   code:'score = 85\nif score >= 90:\n    print("A")\nelif score >= 80:\n    print("B")\nelif score >= 70:\n    print("C")\nelse:\n    print("D")',
   choices:['A','B','B와 C 둘 다','D'],
   correct:1,
+  vary(){
+    const score=randInt(80,89);
+    return {
+      code:'score = '+score+'\nif score >= 90:\n    print("A")\nelif score >= 80:\n    print("B")\nelif score >= 70:\n    print("C")\nelse:\n    print("D")',
+      hint2:score+josa(score,'은','는')+' 90 이상은 아니지만 80 이상이지. 그 아래는 확인조차 안 해.'
+    };
+  },
   hint1:"위에서부터 하나씩 확인하다가, 처음으로 맞는 걸 만나면 거기서 멈춰.",
   hint2:"85는 90 이상은 아니지만 80 이상이지. 그 아래는 확인조차 안 해.",
   explain:{
@@ -540,6 +586,19 @@ const BANK = [
   code:'age = 20\nhas_ticket = False\nif age >= 19 and has_ticket:\n    print("입장")\nelse:\n    print("불가")',
   choices:['입장','불가','아무것도 안 나온다','에러가 난다'],
   correct:1,
+  vary(){
+    const age=randInt(15,25), ticket=Math.random()<0.5;
+    const pass=age>=19 && ticket;
+    let hint2;
+    if(age<19) hint2='나이 조건부터 통과 못 했어.';
+    else if(!ticket) hint2='나이 조건은 통과했지만 표가 없잖아.';
+    else hint2='나이 조건도 통과했고 표도 있어. 둘 다 참이면 입장이야.';
+    return {
+      code:'age = '+age+'\nhas_ticket = '+(ticket?'True':'False')+'\nif age >= 19 and has_ticket:\n    print("입장")\nelse:\n    print("불가")',
+      correct: pass?0:1,
+      hint2
+    };
+  },
   hint1:"and는 양쪽이 모두 참일 때만 참이야.",
   hint2:"나이 조건은 통과했지만 표가 없잖아.",
   explain:{
@@ -554,6 +613,10 @@ const BANK = [
   type:"order",
   prompt:"나이를 보고 성인/미성년을 나눠서 출력해볼 거야. 순서를 맞춰볼까?",
   lines:['age = 17','if age >= 19:','    print("성인")','else:','    print("미성년자")'],
+  vary(){
+    const age=randInt(10,25);
+    return { lines:['age = '+age,'if age >= 19:','    print("성인")','else:','    print("미성년자")'] };
+  },
   hint1:"값이 먼저 있어야 비교할 수 있어.",
   hint2:"if의 방이랑 else의 방은 각각 들여쓴 줄을 하나씩 거느려.",
   explain:{
@@ -670,6 +733,17 @@ const BANK = [
   code:'total = 0\nfor i in range(1, 5):\n    total = total + i\nprint(total)',
   choices:['4','6','10','15'],
   correct:2,
+  vary(){
+    const n=randInt(5,8);
+    const sum=(s,e)=>{ let t=0; for(let i=s;i<e;i++) t+=i; return t; };
+    const terms=[]; for(let i=1;i<n;i++) terms.push(i);
+    return {
+      code:'total = 0\nfor i in range(1, '+n+'):\n    total = total + i\nprint(total)',
+      choices:[String(n-1), String(sum(1,n-1)), String(sum(1,n)), String(sum(1,n+1))],
+      correct:2,
+      hint2:terms.join(' + ')+' 를 계산해보면 돼.'
+    };
+  },
   hint1:"i는 1, 2, 3으로 도는 게 아니야. 어디까지 도는지 먼저 확인해봐.",
   hint2:"1 + 2 + 3 + 4 를 계산해보면 돼.",
   explain:{
@@ -684,6 +758,13 @@ const BANK = [
   type:"order",
   prompt:"1부터 3까지의 합을 구해서 출력해볼 거야. 순서를 맞춰볼까?",
   lines:['total = 0','for i in range(1, 4):','    total += i','print(total)'],
+  vary(){
+    const n=randInt(3,7);
+    return {
+      prompt:'1부터 '+(n-1)+'까지의 합을 구해서 출력해볼 거야. 순서를 맞춰볼까?',
+      lines:['total = 0','for i in range(1, '+n+'):','    total += i','print(total)']
+    };
+  },
   hint1:"저금통은 돌기 전에 준비해야 해.",
   hint2:"출력은 다 돌고 난 뒤에 딱 한 번만 해. 들여쓰기 높이를 보면 알 수 있어.",
   explain:{
@@ -700,6 +781,15 @@ const BANK = [
   code:'n = 3\nwhile n > 0:\n    print(n)\n    n -= 1',
   choices:['2번','3번','4번','끝나지 않는다'],
   correct:1,
+  vary(){
+    const n=randInt(2,6);
+    return {
+      code:'n = '+n+'\nwhile n > 0:\n    print(n)\n    n -= 1',
+      choices:[(n-1)+'번', n+'번', (n+1)+'번', '끝나지 않는다'],
+      correct:1,
+      hint1:'n이 '+n+'부터 1까지 조건을 통과해.'
+    };
+  },
   hint1:"n이 3, 2, 1일 때 조건을 통과해.",
   hint2:"n이 0이 되면 0 > 0 이 거짓이라서 멈춰.",
   explain:{
@@ -735,6 +825,16 @@ BANK.push(
   code:'fruits = ["사과", "바나나", "포도"]\nprint(fruits[1])',
   choices:['사과','바나나','포도','에러가 난다'],
   correct:1,
+  vary(){
+    const items=pickOne([["사과","바나나","포도"],["딸기","수박","참외"],["감","배","자두"],["오렌지","키위","망고"]]);
+    const idx=randInt(0,2);
+    return {
+      code:'fruits = ["'+items.join('", "')+'"]\nprint(fruits['+idx+'])',
+      choices:[...items,'에러가 난다'],
+      correct:idx,
+      hint2:'0번이 '+items[0]+', '+idx+'번이 '+items[idx]+'이야.'
+    };
+  },
   hint1:"파이썬은 첫 번째 자리를 1이 아니라 다른 숫자로 세.",
   hint2:"0번이 사과, 1번이 바나나야.",
   explain:{
@@ -751,6 +851,18 @@ BANK.push(
   code:'nums = [10, 20, 30, 40, 50]\nprint(nums[1:4])',
   choices:['[10, 20, 30]','[20, 30, 40]','[20, 30, 40, 50]','[10, 20, 30, 40]'],
   correct:1,
+  vary(){
+    const start=randInt(1,5)*10;
+    const nums=[start,start+10,start+20,start+30,start+40,start+50];
+    const s=randInt(1,3), e=s+2;
+    const fmt=arr=>'['+arr.join(', ')+']';
+    return {
+      code:'nums = ['+nums.join(', ')+']\nprint(nums['+s+':'+e+'])',
+      choices:[fmt(nums.slice(s-1,e-1)), fmt(nums.slice(s,e)), fmt(nums.slice(s,e+1)), fmt(nums.slice(s-1,e))],
+      correct:1,
+      hint1:s+'번 자리에서 시작해. 0번이 '+nums[0]+'이니까 '+s+'번은 '+nums[s]+'이지.'
+    };
+  },
   hint1:"1번 자리에서 시작해. 0번이 10이니까 1번은 20이지.",
   hint2:"끝 번호는 포함 안 해. range랑 같은 규칙이야.",
   explain:{
@@ -766,6 +878,11 @@ BANK.push(
   prompt:"리스트 끝에 값을 하나 추가해볼 거야. 빈칸을 채워볼까?",
   code:'nums = [1, 2, 3]\nnums.____(4)\nprint(nums)',
   answers:[["append"]],
+  vary(){
+    const nums=[randInt(1,9),randInt(1,9),randInt(1,9)];
+    const add=randInt(1,9);
+    return { code:'nums = ['+nums.join(', ')+']\nnums.____('+add+')\nprint(nums)' };
+  },
   hint1:"'덧붙이다'라는 뜻의 영어 단어야.",
   hint2:"a로 시작하는 여섯 글자!",
   explain:{
@@ -781,6 +898,10 @@ BANK.push(
   prompt:"딕셔너리에서 나이를 꺼내 출력해볼 거야. 빈칸을 채워볼까?",
   code:'person = {"name": "파이키", "age": 3}\nprint(person[____])',
   answers:[['"age"',"'age'"]],
+  vary(){
+    const nm=pickOne(["파이키","레오","코코","마루","별이"]), age=randInt(1,10);
+    return { code:'person = {"name": "'+nm+'", "age": '+age+'}\nprint(person[____])' };
+  },
   hint1:"리스트는 번호로 꺼내지만 딕셔너리는 이름표로 꺼내.",
   hint2:"따옴표 잊지 마! 키도 문자열이거든.",
   explain:{
@@ -797,6 +918,13 @@ BANK.push(
   code:'scores = {"국어": 90, "수학": 85}\nprint(scores["영어"])',
   buggyLine:1,
   answers:[['print(scores.get("영어"))','print(scores.get("영어", 0))',"print(scores.get('영어'))"]],
+  vary(){
+    const subj=pickOne(["영어","과학","사회","음악","체육"]);
+    return {
+      code:'scores = {"국어": 90, "수학": 85}\nprint(scores["'+subj+'"])',
+      answers:[['print(scores.get("'+subj+'"))','print(scores.get("'+subj+'", 0))',"print(scores.get('"+subj+"'))"]]
+    };
+  },
   hint1:"없는 키를 대괄호로 부르면 에러가 나. 근데 에러 대신 조용히 넘어가는 방법이 있어.",
   hint2:"딕셔너리가 가진 기능 중 '가져오다'라는 이름의 걸 써봐.",
   explain:{
@@ -812,6 +940,10 @@ BANK.push(
   prompt:"리스트의 값을 모두 더해서 평균을 출력해볼 거야. 순서를 맞춰볼까?",
   lines:['scores = [80, 90, 100]','total = 0','for s in scores:','    total += s','print(total / len(scores))'],
   accept:[[0,1,2,3,4],[1,0,2,3,4]],
+  vary(){
+    const scores=[randInt(60,100),randInt(60,100),randInt(60,100)];
+    return { lines:['scores = ['+scores.join(', ')+']','total = 0','for s in scores:','    total += s','print(total / len(scores))'] };
+  },
   hint1:"저금통을 준비한 다음에 돌기 시작해.",
   hint2:"평균은 다 더한 뒤에 개수로 나눠. len()이 개수를 알려줘.",
   explain:{
@@ -845,6 +977,10 @@ BANK.push(
   prompt:"두 수를 더해서 돌려주는 함수를 만들어볼 거야. 빈칸을 채워볼까?",
   code:'____ add(a, b):\n    return a + b\n\nprint(add(2, 3))',
   answers:[["def"]],
+  vary(){
+    const a=randInt(2,9), b=randInt(2,9);
+    return { code:'____ add(a, b):\n    return a + b\n\nprint(add('+a+', '+b+'))' };
+  },
   hint1:"함수를 정의한다는 뜻의 예약어야. 세 글자!",
   hint2:"define을 줄인 거야.",
   explain:{
@@ -861,6 +997,14 @@ BANK.push(
   code:'def add(a, b):\n    print(a + b)\n\nresult = add(2, 3)\nprint(result)',
   choices:['5 한 줄','5 와 5 두 줄','5 와 None 두 줄','에러가 난다'],
   correct:2,
+  vary(){
+    const a=randInt(2,9), b=randInt(2,9), s=a+b;
+    return {
+      code:'def add(a, b):\n    print(a + b)\n\nresult = add('+a+', '+b+')\nprint(result)',
+      choices:[s+' 한 줄', s+' 와 '+s+' 두 줄', s+' 와 None 두 줄', '에러가 난다'],
+      correct:2
+    };
+  },
   hint1:"함수 안에서는 print를 했지 return은 안 했어.",
   hint2:"돌려준 게 없는 함수는 None을 돌려줘.",
   explain:{
@@ -892,6 +1036,14 @@ BANK.push(
   code:'def greet(name, greeting="안녕"):\n    return greeting + ", " + name\n\nprint(greet("파이키"))',
   choices:['안녕, 파이키','파이키','에러가 난다','None'],
   correct:0,
+  vary(){
+    const nm=pickOne(["파이키","레오","코코","마루","별이"]);
+    return {
+      code:'def greet(name, greeting="안녕"):\n    return greeting + ", " + name\n\nprint(greet("'+nm+'"))',
+      choices:['안녕, '+nm, nm, '에러가 난다', 'None'],
+      correct:0
+    };
+  },
   hint1:"greeting에는 미리 정해둔 값이 있어.",
   hint2:"인자를 안 넘기면 그 기본값이 쓰여.",
   explain:{
@@ -906,6 +1058,10 @@ BANK.push(
   type:"order",
   prompt:"원의 넓이를 구하는 함수를 만들고 호출해볼 거야. 순서를 맞춰볼까?",
   lines:['def area(r):','    return 3.14 * r * r','print(area(5))'],
+  vary(){
+    const r=randInt(2,9);
+    return { lines:['def area(r):','    return 3.14 * r * r','print(area('+r+'))'] };
+  },
   hint1:"레시피를 먼저 적어두고 그다음에 요리해.",
   hint2:"함수 정의가 먼저, 호출이 나중이야.",
   explain:{
@@ -940,6 +1096,22 @@ BANK.push(
   code:'nums = [1, 2, 3, 4, 5]\nresult = [n * 2 for n in nums if n % 2 == 1]\nprint(result)',
   choices:['[2, 4, 6, 8, 10]','[1, 3, 5]','[2, 6, 10]','[1, 2, 3, 4, 5]'],
   correct:2,
+  vary(){
+    let nums,odds;
+    do{
+      nums=[]; for(let i=0;i<5;i++) nums.push(randInt(1,9));
+      odds=nums.filter(n=>n%2===1);
+    } while(odds.length===0 || odds.length===nums.length);
+    const doubledOdds=odds.map(n=>n*2);
+    const allDoubled=nums.map(n=>n*2);
+    const fmt=arr=>'['+arr.join(', ')+']';
+    return {
+      code:'nums = ['+nums.join(', ')+']\nresult = [n * 2 for n in nums if n % 2 == 1]\nprint(result)',
+      choices:[fmt(allDoubled), fmt(odds), fmt(doubledOdds), fmt(nums)],
+      correct:2,
+      hint2:'홀수 '+odds.join(', ')+'만 남고 각각 2배가 돼.'
+    };
+  },
   hint1:"뒤쪽 if가 먼저 걸러내고, 앞쪽 식이 나중에 바꿔.",
   hint2:"홀수 1, 3, 5만 남고 각각 2배가 돼.",
   explain:{
@@ -956,6 +1128,21 @@ BANK.push(
   code:'counts = {}\nfor c in "hello":\n    counts[c] = counts.get(c, 0) + 1\nprint(counts["l"])',
   choices:['1','2','3','에러가 난다'],
   correct:1,
+  vary(){
+    const word=pickOne(["hello","banana","apple","letter","balloon","coffee","puppy"]);
+    const letters=[...new Set(word.split(''))];
+    const letter=pickOne(letters);
+    const count=[...word].filter(c=>c===letter).length;
+    const wrongNums=new Set();
+    while(wrongNums.size<2){ const w=randInt(1,4); if(w!==count) wrongNums.add(w); }
+    const numOpts=[count,...wrongNums].sort((a,b)=>a-b).map(String);
+    return {
+      code:'counts = {}\nfor c in "'+word+'":\n    counts[c] = counts.get(c, 0) + 1\nprint(counts["'+letter+'"])',
+      choices:[...numOpts,'에러가 난다'],
+      correct:numOpts.indexOf(String(count)),
+      hint2:word+'에 '+letter+'가 몇 개인지 세보면 돼.'
+    };
+  },
   hint1:"문자열도 for로 돌면 글자가 하나씩 나와.",
   hint2:"hello에 l이 몇 개인지 세보면 돼.",
   explain:{
@@ -1005,6 +1192,10 @@ BANK.push(
   prompt:"CSV 파일을 읽어서 표로 만들어볼 거야. 빈칸을 채워볼까?",
   code:'import pandas as pd\ndf = pd.____("sales.csv")',
   answers:[["read_csv"]],
+  vary(){
+    const fname=pickOne(["sales.csv","students.csv","weather.csv","orders.csv"]);
+    return { code:'import pandas as pd\ndf = pd.____("'+fname+'")' };
+  },
   hint1:"'CSV를 읽어라'를 영어로 그대로 쓴 이름이야.",
   hint2:"단어 두 개를 밑줄로 이었어.",
   explain:{
@@ -1022,6 +1213,23 @@ BANK.push(
   code:'df.head(3)',
   choices:['맨 위 3줄 (서울, 부산, 대구)','맨 아래 3줄 (대구, 인천, 광주)','무작위 3줄','매출 상위 3줄 (서울, 부산, 인천)'],
   correct:0,
+  vary(){
+    const cityPool=["서울","부산","대구","인천","광주","대전","울산","제주"];
+    const cities=[]; while(cities.length<5){ const c=pickOne(cityPool); if(!cities.includes(c)) cities.push(c); }
+    const sales=cities.map(()=>randInt(50,150));
+    const rows=cities.map((c,i)=>[c,sales[i]]);
+    const n=pickOne([2,3]);
+    const firstN=cities.slice(0,n), lastN=cities.slice(-n);
+    const topN=[...cities.keys()].sort((a,b)=>sales[b]-sales[a]).slice(0,n).map(i=>cities[i]);
+    return {
+      prompt:'아래 표가 담긴 df 에서 <code>df.head('+n+')</code> 을 실행하면 뭐가 나올까?',
+      table:{cols:["도시","매출"],rows},
+      code:'df.head('+n+')',
+      choices:['맨 위 '+n+'줄 ('+firstN.join(', ')+')','맨 아래 '+n+'줄 ('+lastN.join(', ')+')','무작위 '+n+'줄','매출 상위 '+n+'줄 ('+topN.join(', ')+')'],
+      correct:0,
+      hint2:'정렬은 안 해. 있는 그대로의 앞 '+n+'줄이야.'
+    };
+  },
   hint1:"head는 머리, 즉 앞부분이라는 뜻이야.",
   hint2:"정렬은 안 해. 있는 그대로의 앞 3줄이야.",
   explain:{
@@ -1039,6 +1247,19 @@ BANK.push(
   code:'print(df.shape)',
   choices:['(2, 5)','(5, 2)','5','[5, 2]'],
   correct:1,
+  vary(){
+    const n=randInt(3,8);
+    const cityPool=["서울","부산","대구","인천","광주","대전","울산","제주"];
+    const cities=cityPool.slice(0,n);
+    const rows=cities.map(c=>[c,randInt(50,150)]);
+    return {
+      prompt:n+'행 2열짜리 df 에서 <code>print(df.shape)</code> 을 실행하면 결과가 뭘까?',
+      table:{cols:["도시","매출"],rows},
+      choices:['(2, '+n+')', '('+n+', 2)', String(n), '['+n+', 2]'],
+      correct:1,
+      hint2:'행 '+n+'개, 열 2개!'
+    };
+  },
   hint1:"파이썬에서 표의 좌표는 항상 행이 먼저야.",
   hint2:"행 5개, 열 2개!",
   explain:{
@@ -1070,6 +1291,10 @@ BANK.push(
   prompt:"이 코드, 에러가 나. import 줄을 고쳐볼까?",
   code:'import pd as pandas\ndf = pd.read_csv("data.csv")',
   answers:[["import pandas as pd"]],
+  vary(){
+    const fname=pickOne(["data.csv","sales.csv","report.csv","students.csv"]);
+    return { code:'import pd as pandas\ndf = pd.read_csv("'+fname+'")' };
+  },
   hint1:"진짜 라이브러리 이름이랑 별명의 자리가 바뀌었어.",
   hint2:"import 뒤에는 실제 이름, as 뒤에는 별명이 와.",
   explain:{
@@ -1088,6 +1313,16 @@ BANK.push(
   table:{cols:["도시","매출"],rows:[["서울",120],["부산",95],["대구",70],["인천",88]]},
   code:'result = df[df[____] > 80]',
   answers:[['"매출"',"'매출'"]],
+  vary(){
+    const cityPool=["서울","부산","대구","인천","광주"];
+    const rows=cityPool.map(c=>[c,randInt(50,150)]);
+    const th=pickOne([70,80,90,100]);
+    return {
+      table:{cols:["도시","매출"],rows},
+      prompt:'매출이 '+th+'보다 큰 행만 골라내볼 거야. 빈칸을 채워볼까?',
+      code:'result = df[df[____] > '+th+']'
+    };
+  },
   hint1:"어떤 열을 기준으로 거를 건지 적어야 해.",
   hint2:"열 이름도 문자열이라서 따옴표가 필요해.",
   explain:{
@@ -1105,6 +1340,16 @@ BANK.push(
   code:'df.iloc[0]',
   choices:['서울 행 전체','도시 열 전체','120','에러가 난다'],
   correct:0,
+  vary(){
+    const cityPool=["서울","부산","대구","인천","광주","대전"];
+    const cities=[]; while(cities.length<3){ const c=pickOne(cityPool); if(!cities.includes(c)) cities.push(c); }
+    const rows=cities.map(c=>[c,randInt(50,150)]);
+    return {
+      table:{cols:["도시","매출"],rows},
+      choices:[cities[0]+' 행 전체','도시 열 전체',String(rows[0][1]),'에러가 난다'],
+      correct:0
+    };
+  },
   hint1:"iloc의 i는 integer, 숫자 위치를 뜻해.",
   hint2:"대괄호에 하나만 넣으면 행을 가리켜. 0번 행이지.",
   explain:{
@@ -1135,6 +1380,13 @@ BANK.push(
   prompt:"이 코드, 에러가 나. 마지막 줄을 고쳐볼까?",
   code:'result = df[df["매출"] > 80 and df["도시"] == "서울"]',
   answers:[['result = df[(df["매출"] > 80) & (df["도시"] == "서울")]']],
+  vary(){
+    const th=pickOne([70,80,90,100]), city=pickOne(["서울","부산","대구","인천"]);
+    return {
+      code:'result = df[df["매출"] > '+th+' and df["도시"] == "'+city+'"]',
+      answers:[['result = df[(df["매출"] > '+th+') & (df["도시"] == "'+city+'")]']]
+    };
+  },
   hint1:"pandas에서는 and 대신 다른 기호를 써.",
   hint2:"각 조건을 괄호로 감싸고 & 로 이어야 해.",
   explain:{
@@ -1153,6 +1405,11 @@ BANK.push(
   table:{cols:["부서","연봉"],rows:[["영업",4000],["개발",5500],["영업",4200],["개발",5800]]},
   code:'df.____("부서")["연봉"].mean()',
   answers:[["groupby"]],
+  vary(){
+    const [d1,d2]=pickOne([["영업","개발"],["마케팅","디자인"],["기획","운영"]]);
+    const rows=[[d1,randInt(3000,6000)],[d2,randInt(3000,6000)],[d1,randInt(3000,6000)],[d2,randInt(3000,6000)]];
+    return { table:{cols:["부서","연봉"],rows} };
+  },
   hint1:"'~별로 묶다'를 영어로 그대로 쓴 이름이야.",
   hint2:"group + by 를 합친 거야.",
   explain:{
@@ -1170,6 +1427,17 @@ BANK.push(
   code:'df["부서"].value_counts()',
   choices:['영업 3, 개발 2','개발 2, 영업 3','영업 4033, 개발 5650','부서 5'],
   correct:0,
+  vary(){
+    const [d1,d2]=pickOne([["영업","개발"],["마케팅","디자인"],["기획","운영"],["생산","품질"]]);
+    const n1=randInt(1,4), n2=5-n1;
+    const rows=[]; for(let i=0;i<n1;i++) rows.push([d1,randInt(3000,6000)]); for(let i=0;i<n2;i++) rows.push([d2,randInt(3000,6000)]);
+    const more=n1>n2?d1:d2, less=n1>n2?d2:d1, moreN=Math.max(n1,n2), lessN=Math.min(n1,n2);
+    return {
+      table:{cols:["부서","연봉"],rows},
+      choices:[more+' '+moreN+', '+less+' '+lessN, less+' '+lessN+', '+more+' '+moreN, more+' '+randInt(3000,6000)+', '+less+' '+randInt(3000,6000), '부서 5'],
+      correct:0
+    };
+  },
   hint1:"값이 각각 몇 번 나오는지 세는 거야.",
   hint2:"기본적으로 많은 것부터 정렬해서 보여줘.",
   explain:{
@@ -1187,6 +1455,10 @@ BANK.push(
   code:'df.mean(axis=1)',
   choices:['각 과목의 평균 (열별)','각 학생의 평균 (행별)','전체 평균 하나','에러가 난다'],
   correct:1,
+  vary(){
+    const rows=[[randInt(50,100),randInt(50,100),randInt(50,100)],[randInt(50,100),randInt(50,100),randInt(50,100)]];
+    return { table:{cols:["국어","영어","수학"],rows} };
+  },
   hint1:"axis는 '어느 축을 따라 훑을 것인가'를 정해.",
   hint2:"1은 열 방향, 즉 가로로 훑는 거야. 가로로 훑으면 한 사람의 여러 과목이 합쳐지지.",
   explain:{
@@ -1251,6 +1523,10 @@ BANK.push(
   prompt:"그래프에 제목이랑 y축 이름을 붙여볼 거야. 빈칸을 채워볼까?",
   code:'plt.bar(cities, sales)\nplt.title("도시별 매출")\nplt.____("매출(만원)")\nplt.show()',
   answers:[["ylabel"]],
+  vary(){
+    const lbl=pickOne(["매출(만원)","방문자 수(명)","평균 기온(℃)","판매량(개)"]);
+    return { code:'plt.bar(cities, sales)\nplt.title("도시별 매출")\nplt.____("'+lbl+'")\nplt.show()' };
+  },
   hint1:"y축에 붙이는 이름표(label)야.",
   hint2:"y + label 을 합친 거야.",
   explain:{
@@ -1471,6 +1747,11 @@ function match(user,list){
 /* ─────────── 문제 템플릿(랜덤화) ─────────── */
 function randInt(min,max){ return min+Math.floor(Math.random()*(max-min+1)); }
 function pickOne(arr){ return arr[randInt(0,arr.length-1)]; }
+const BATCHIM_DIGIT={0:1,1:1,2:0,3:1,4:0,5:0,6:1,7:1,8:1,9:0};
+function josa(n,withBatchim,noBatchim){
+  const s=String(n), last=+s[s.length-1];
+  return BATCHIM_DIGIT[last] ? withBatchim : noBatchim;
+}
 function materialize(q){
   if(!q.vary) return q;
   try{ return Object.assign({},q,q.vary()); }
