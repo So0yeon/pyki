@@ -229,8 +229,10 @@ pre.code.outp{white-space:pre-wrap;word-break:break-word}
 .ln{
   font-family:var(--mono);font-size:13px;text-align:left;padding:9px 12px;
   background:var(--card);border:1px solid var(--line);border-radius:8px;
-  color:var(--ink);white-space:pre;overflow-x:auto;transition:.13s
+  color:var(--ink);transition:.13s;display:flex;gap:9px;align-items:flex-start;width:100%
 }
+.ln .mk{color:var(--faint);flex-shrink:0;padding-top:1px;min-width:13px}
+.ln .lncode{white-space:pre;overflow-x:auto;flex:1;min-width:0}
 .ln:hover:not(:disabled){border-color:var(--jade)}
 .ln.right{border-color:var(--jade);background:var(--jade-soft)}
 .ln.wrong{border-color:var(--wrong);background:var(--wrong-soft)}
@@ -2121,13 +2123,14 @@ function qView(){
     h+='<input class="oneline" id="bugIn" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="고친 줄을 여기에 써봐">';
   }
   else if(q.type==="order"){
-    h+='<div class="poolhead">아래 줄을 눌러서 순서대로 쌓아봐</div>';
+    h+='<div class="poolhead">아래 줄을 눌러서(또는 숫자 키로) 순서대로 쌓아봐</div>';
     h+='<div class="slot'+(SES.order.length?"":" empty")+'" id="slot"></div>';
     h+='<div class="pool" id="pool"></div>';
   }
   else if(q.type==="write"){
     if(q.code) h+=codeBlock(q.code);
     h+='<textarea class="write" id="wIn" spellcheck="false" autocapitalize="off" placeholder="여기에 직접 작성해보자"></textarea>';
+    h+='<p style="font-size:11.5px;color:var(--faint);margin:-10px 0 14px">Ctrl+Enter로 바로 확인할 수 있어</p>';
   }
 
   if(q.type==="predict"||q.type==="match"){
@@ -2189,10 +2192,11 @@ function paintOrder(){
   slot.innerHTML=SES.order.map((ix,pos)=>{
     let cls="ln";
     if(SES.done) cls+= (pos<ref.length && q.lines[ix]===q.lines[ref[pos]])?" right":" wrong";
-    return '<button class="'+cls+'" data-p="'+pos+'"'+(SES.done?" disabled":"")+'>'+esc(q.lines[ix]||"(빈 줄)")+'</button>';
+    return '<button class="'+cls+'" data-p="'+pos+'"'+(SES.done?" disabled":"")+'><span class="mk">'+(pos+1)+'</span><span class="lncode">'+esc(q.lines[ix]||"(빈 줄)")+'</span></button>';
   }).join("");
-  pool.innerHTML=SES.shuffled.filter(ix=>!SES.order.includes(ix)).map(ix=>
-    '<button class="ln" data-x="'+ix+'"'+(SES.done?" disabled":"")+'>'+esc(q.lines[ix]||"(빈 줄)")+'</button>').join("");
+  const poolIdx=SES.shuffled.filter(ix=>!SES.order.includes(ix));
+  pool.innerHTML=poolIdx.map((ix,i)=>
+    '<button class="ln" data-x="'+ix+'"'+(SES.done?" disabled":"")+'><span class="mk">'+(i+1)+'</span><span class="lncode">'+esc(q.lines[ix]||"(빈 줄)")+'</span></button>').join("");
   [...pool.children].forEach(b=>b.onclick=()=>{ SES.order.push(+b.dataset.x); paintOrder(); hideErr(); });
   [...slot.children].forEach(b=>b.onclick=()=>{ SES.order.splice(+b.dataset.p,1); paintOrder(); });
 }
@@ -2262,20 +2266,22 @@ function check(){
 }
 
 async function checkBugByRun(q,v){
+  const mySES=SES, myI=SES.i;
   hideErr(); setRunning(true,"코드를 실행해서 확인하는 중...");
   const [stu,can]=await Promise.all([runPy(bugLines(q,v)), getCanonicalOutput(q)]);
   setRunning(false);
-  if(!SES || SES.qs[SES.i]!==q) return;
+  if(SES!==mySES || SES.i!==myI || SES.qs[SES.i]!==q) return;
   SES.runResult={student:stu, canonical:can};
   if(stu.error==="UNAVAILABLE"){ finish(match(v,q.answers[0])); return; }
   finish(!stu.error && stu.stdout===can.stdout);
 }
 
 async function runWriteAndShow(q,v){
+  const mySES=SES, myI=SES.i;
   setRunning(true,"코드를 실행하는 중...");
   const [stu,mod]=await Promise.all([runPy(v), getModelOutput(q)]);
   setRunning(false);
-  if(!SES || SES.qs[SES.i]!==q) return;
+  if(SES!==mySES || SES.i!==myI || SES.qs[SES.i]!==q) return;
   SES.runResult = (stu.error==="UNAVAILABLE")? null : {student:stu, model:mod};
   finish(null);
 }
@@ -2400,10 +2406,10 @@ function doneView(){
   const dueN=Object.keys(S.review).length;
   if(dueN) h+='<p class="note">복습으로 넘긴 문제 '+dueN+'개는 다음 세션에 다시 나와.</p>';
 
-  h+='<div class="tabs"><button id="again">한 번 더</button><button id="home">돌아가기</button></div>';
+  h+='<div class="tabs"><button id="again">한 번 더</button><button id="nextStage">다음 단계</button></div>';
   app.innerHTML=h; meta();
   document.getElementById("again").onclick=()=>startSession(buildSession(5));
-  document.getElementById("home").onclick=()=>{VIEW="home";SES=null;render();};
+  document.getElementById("nextStage").onclick=()=>{SES=null;VIEW="bundles";render();};
 }
 
 /* ═══════════ 꾸러미 ═══════════ */
@@ -2501,8 +2507,17 @@ function render(){
   persistSession();
 }
 document.addEventListener("keydown",e=>{
-  if(VIEW!=="q"||!SES||e.ctrlKey||e.metaKey||e.altKey) return;
+  if(VIEW!=="q"||!SES) return;
   const tag=e.target.tagName;
+  if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)&&!SES.done){
+    if(SES.qs[SES.i].type==="write"){
+      e.preventDefault();
+      const b=document.getElementById("chk");
+      if(b) b.click();
+    }
+    return;
+  }
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
   if(e.key==="Enter"&&!e.shiftKey){
     if(SES.done){
       if(tag==="TEXTAREA") return;
@@ -2528,6 +2543,9 @@ document.addEventListener("keydown",e=>{
     if(q.type==="predict"||q.type==="match"){
       const idx="1234".indexOf(e.key);
       if(idx>-1){ const b=app.querySelector('#opts [data-i="'+idx+'"]'); if(b) b.click(); }
+    } else if(q.type==="order"){
+      const idx="123456789".indexOf(e.key);
+      if(idx>-1){ const pool=document.getElementById("pool"); const b=pool&&pool.children[idx]; if(b) b.click(); }
     }
   }
 });
