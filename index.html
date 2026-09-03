@@ -1921,6 +1921,13 @@ document.addEventListener("keydown",e=>{
   if(VIEW!=="q"||!SES||e.ctrlKey||e.metaKey||e.altKey) return;
   const tag=e.target.tagName;
   if(e.key==="Enter"&&!e.shiftKey){
+    if(SES.done){
+      if(tag==="TEXTAREA") return;
+      e.preventDefault();
+      const b=document.getElementById("next");
+      if(b) b.click();
+      return;
+    }
     if(tag==="INPUT"){
       e.preventDefault();
       if(e.target.classList.contains("blank-in")){
@@ -1928,7 +1935,7 @@ document.addEventListener("keydown",e=>{
         const idx=blanks.indexOf(e.target);
         if(idx>-1&&idx<blanks.length-1){ blanks[idx+1].focus(); return; }
       }
-      const b=document.getElementById("chk")||document.getElementById("next");
+      const b=document.getElementById("chk");
       if(b) b.click();
     }
     return;
